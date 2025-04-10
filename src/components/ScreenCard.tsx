@@ -23,7 +23,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLa
             <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{customLabel}</span>
           )}
         </div>
-        <div className="h-2 w-2 rounded-full bg-green-500" title="Online"></div>
+        <div className="h-2 w-2 rounded-full bg-red-500" title="Offline"></div>
       </div>
       
       <div 
