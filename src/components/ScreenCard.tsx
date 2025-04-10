@@ -34,7 +34,11 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLa
           id={screenId}
           src={placeholderImage}
           alt={`Tela de ${formattedName}`}
-          className="w-full aspect-[4/3] object-cover group-hover:opacity-90 transition-opacity"
+          className="w-full object-cover"
+          style={{ 
+            aspectRatio: '4/3',
+            maxHeight: '240px'
+          }}
         />
         <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
           <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Clique para expandir</span>

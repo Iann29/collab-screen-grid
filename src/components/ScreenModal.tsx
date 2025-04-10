@@ -46,7 +46,8 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
     <div className="modal-backdrop animate-fade-in">
       <div 
         ref={modalRef}
-        className="bg-card rounded-lg overflow-hidden border border-border shadow-xl max-w-[672px] w-full mx-4 animate-scale-in"
+        className="bg-card rounded-lg overflow-hidden border border-border shadow-xl w-full mx-4 animate-scale-in"
+        style={{ maxWidth: '672px' }} // Um pouco maior que 640px para dar margem
       >
         <div className="px-4 py-3 bg-muted flex items-center justify-between">
           <span className="font-medium">Tela de {formattedName}</span>
@@ -57,12 +58,17 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
             <X size={18} />
           </button>
         </div>
-        <div className="p-4">
+        <div className="p-4 flex justify-center">
           <img
             id={screenId}
             src={placeholderImage}
             alt={`Tela de ${formattedName} (expandida)`}
-            className="w-full max-w-[640px] max-h-[480px] object-contain mx-auto"
+            className="w-full h-auto"
+            style={{ 
+              width: '640px', 
+              height: '480px',
+              objectFit: 'contain'
+            }}
           />
         </div>
       </div>
