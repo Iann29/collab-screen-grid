@@ -32,8 +32,12 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
     };
   }, []);
 
+  // Reset and play audio when name or offline status changes
   useEffect(() => {
     if (isOpen && isOffline && audioRef.current) {
+      // Reset audio to beginning
+      audioRef.current.currentTime = 0;
+      
       // Play audio when modal opens for offline collaborator
       audioRef.current.play()
         .catch(err => {
@@ -45,7 +49,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
           });
         });
     }
-  }, [isOpen, isOffline, toast]);
+  }, [isOpen, isOffline, toast, name]); // Added name as dependency to trigger effect when switching users
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
