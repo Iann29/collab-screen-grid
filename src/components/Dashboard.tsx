@@ -4,13 +4,13 @@ import ScreenCard from './ScreenCard';
 import ScreenModal from './ScreenModal';
 
 const collaborators = [
-  { name: 'Ian', isOwner: true },
-  { name: 'Matheus', isOwner: false },
-  { name: 'Andi', isOwner: false },
-  { name: 'Giovani', isOwner: false },
-  { name: 'Julio', isOwner: false },
-  { name: 'Pedro', isOwner: false },
-  { name: 'Vini', isOwner: false }
+  { name: 'Ian', isOwner: true, label: 'Dev++++' },
+  { name: 'Matheus', isOwner: false, label: 'Designer+' },
+  { name: 'Andi', isOwner: false, label: 'Vagabundo' },
+  { name: 'Giovani', isOwner: false, label: 'Trator' },
+  { name: 'Julio', isOwner: false, label: 'Vadio' },
+  { name: 'Pedro', isOwner: false, label: 'Unico que presta' },
+  { name: 'Vini', isOwner: false, label: 'Nunca aparece' }
 ];
 
 const Dashboard: React.FC = () => {
@@ -37,6 +37,7 @@ const Dashboard: React.FC = () => {
             key={collaborator.name}
             name={collaborator.name}
             isOwner={collaborator.isOwner}
+            customLabel={collaborator.label}
             onClick={() => handleOpenModal(collaborator.name)}
           />
         ))}

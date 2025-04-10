@@ -6,10 +6,11 @@ import placeholderImage from '/placeholder.svg';
 interface ScreenCardProps {
   name: string;
   isOwner?: boolean;
+  customLabel?: string;
   onClick: () => void;
 }
 
-const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, onClick }) => {
+const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLabel, onClick }) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   const screenId = `screen-${name.toLowerCase()}`;
   
@@ -18,7 +19,9 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, onClick 
       <div className="px-4 py-2 bg-muted flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-foreground">{formattedName}</span>
-          {isOwner && <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">Dev++++</span>}
+          {customLabel && (
+            <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{customLabel}</span>
+          )}
         </div>
         <div className="h-2 w-2 rounded-full bg-green-500" title="Online"></div>
       </div>
