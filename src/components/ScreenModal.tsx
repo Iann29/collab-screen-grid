@@ -1,9 +1,9 @@
-
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
 import chinaGif from '/gif/china.gif';
 import { useToast } from '@/hooks/use-toast';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ScreenModalProps {
   name: string;
@@ -49,7 +49,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
           });
         });
     }
-  }, [isOpen, isOffline, toast, name]); // Added name as dependency to trigger effect when switching users
+  }, [isOpen, isOffline, toast, name]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -106,18 +106,15 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
             <X size={18} />
           </button>
         </div>
-        <div className="p-4 flex justify-center">
-          <img
-            id={screenId}
-            src={chinaGif}
-            alt={`Tela de ${formattedName} (expandida)`}
-            className="w-full h-auto"
-            style={{ 
-              width: '640px', 
-              height: '480px',
-              objectFit: 'cover'
-            }}
-          />
+        <div className="p-4">
+          <AspectRatio ratio={4/3} className="w-full overflow-hidden">
+            <img
+              id={screenId}
+              src={chinaGif}
+              alt={`Tela de ${formattedName} (expandida)`}
+              className="w-full h-full object-cover"
+            />
+          </AspectRatio>
         </div>
       </div>
     </div>

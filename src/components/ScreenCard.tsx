@@ -3,6 +3,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import placeholderImage from '/placeholder.svg';
 import chinaGif from '/gif/china.gif';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ScreenCardProps {
   name: string;
@@ -45,19 +46,17 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         className="relative cursor-pointer group"
         onClick={handleClick}
       >
-        <img
-          id={screenId}
-          src={chinaGif}
-          alt={`Tela de ${formattedName}`}
-          className="w-full h-full object-cover"
-          style={{ 
-            aspectRatio: '4/3',
-            maxHeight: '240px'
-          }}
-        />
-        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-          <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Clique para expandir</span>
-        </div>
+        <AspectRatio ratio={4/3} className="w-full">
+          <img
+            id={screenId}
+            src={chinaGif}
+            alt={`Tela de ${formattedName}`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Clique para expandir</span>
+          </div>
+        </AspectRatio>
       </div>
     </div>
   );
