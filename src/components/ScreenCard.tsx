@@ -2,6 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import placeholderImage from '/placeholder.svg';
+import chinaGif from '/gif/china.gif';
 
 interface ScreenCardProps {
   name: string;
@@ -32,9 +33,9 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLa
       >
         <img
           id={screenId}
-          src={placeholderImage}
+          src={chinaGif}
           alt={`Tela de ${formattedName}`}
-          className="w-full object-cover"
+          className="w-full h-full object-cover"
           style={{ 
             aspectRatio: '4/3',
             maxHeight: '240px'

@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
+import chinaGif from '/gif/china.gif';
 
 interface ScreenModalProps {
   name: string;
@@ -61,13 +62,13 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
         <div className="p-4 flex justify-center">
           <img
             id={screenId}
-            src={placeholderImage}
+            src={chinaGif}
             alt={`Tela de ${formattedName} (expandida)`}
             className="w-full h-auto"
             style={{ 
               width: '640px', 
               height: '480px',
-              objectFit: 'contain'
+              objectFit: 'cover'
             }}
           />
         </div>
