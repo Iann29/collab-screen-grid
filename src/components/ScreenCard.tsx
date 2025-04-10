@@ -11,6 +11,7 @@ interface ScreenCardProps {
   customLabel?: string;
   onClick: () => void;
   isOffline?: boolean;
+  labelColor?: string;
 }
 
 const ScreenCard: React.FC<ScreenCardProps> = ({ 
@@ -18,7 +19,8 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   isOwner = false, 
   customLabel, 
   onClick,
-  isOffline = true // Default to offline for now
+  isOffline = true, // Default to offline for now
+  labelColor
 }) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   const screenId = `screen-${name.toLowerCase()}`;
@@ -33,7 +35,9 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-foreground">{formattedName}</span>
           {customLabel && (
-            <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{customLabel}</span>
+            <span className={cn("bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full", labelColor)}>
+              {customLabel}
+            </span>
           )}
         </div>
         <div 

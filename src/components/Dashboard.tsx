@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ScreenCard from './ScreenCard';
 import ScreenModal from './ScreenModal';
@@ -10,7 +9,8 @@ const collaborators = [
   { name: 'Giovani', isOwner: false, label: 'Trator', isOffline: true },
   { name: 'Julio', isOwner: false, label: 'Vadio', isOffline: true },
   { name: 'Pedro', isOwner: false, label: 'Unico que presta', isOffline: false },
-  { name: 'Vini', isOwner: false, label: 'Nunca aparece', isOffline: true }
+  { name: 'Vini', isOwner: false, label: 'Nunca aparece', isOffline: true },
+  { name: 'Dumb Dummy', isOwner: false, label: 'I.A', isOffline: true, labelColor: 'text-red-500 bg-red-100' }
 ];
 
 const Dashboard: React.FC = () => {
@@ -41,6 +41,7 @@ const Dashboard: React.FC = () => {
             isOwner={collaborator.isOwner}
             customLabel={collaborator.label}
             isOffline={collaborator.isOffline}
+            labelColor={collaborator.labelColor}
             onClick={() => handleOpenModal(collaborator.name, collaborator.isOffline)}
           />
         ))}
