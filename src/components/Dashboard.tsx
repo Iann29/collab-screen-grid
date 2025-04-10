@@ -27,8 +27,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="container px-4 py-8 mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Collaboration Dashboard</h1>
-        <p className="text-muted-foreground">Monitor your team's screens in real-time</p>
+        <h1 className="text-2xl font-bold mb-2">Painel de Colaboração</h1>
+        <p className="text-muted-foreground">Monitore as telas da sua equipe em tempo real</p>
       </div>
       
       <div className="screen-grid">

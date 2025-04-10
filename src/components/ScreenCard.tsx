@@ -18,7 +18,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, onClick 
       <div className="px-4 py-2 bg-muted flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-foreground">{formattedName}</span>
-          {isOwner && <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">Owner</span>}
+          {isOwner && <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">Dev++++</span>}
         </div>
         <div className="h-2 w-2 rounded-full bg-green-500" title="Online"></div>
       </div>
@@ -30,11 +30,11 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, onClick 
         <img
           id={screenId}
           src={placeholderImage}
-          alt={`${formattedName}'s screen`}
+          alt={`Tela de ${formattedName}`}
           className="w-full aspect-[4/3] object-cover group-hover:opacity-90 transition-opacity"
         />
         <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-          <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Click to expand</span>
+          <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Clique para expandir</span>
         </div>
       </div>
     </div>

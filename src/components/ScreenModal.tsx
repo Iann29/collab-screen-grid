@@ -49,7 +49,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
         className="bg-card rounded-lg overflow-hidden border border-border shadow-xl max-w-[672px] w-full mx-4 animate-scale-in"
       >
         <div className="px-4 py-3 bg-muted flex items-center justify-between">
-          <span className="font-medium">{formattedName}'s Screen</span>
+          <span className="font-medium">Tela de {formattedName}</span>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-background/50 transition-colors"
@@ -61,7 +61,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
           <img
             id={screenId}
             src={placeholderImage}
-            alt={`${formattedName}'s screen (expanded)`}
+            alt={`Tela de ${formattedName} (expandida)`}
             className="w-full max-w-[640px] max-h-[480px] object-contain mx-auto"
           />
         </div>
