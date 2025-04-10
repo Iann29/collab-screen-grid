@@ -3,17 +3,49 @@ import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
 import chinaGif from '/gif/china.gif';
+import { useToast } from '@/hooks/use-toast';
 
 interface ScreenModalProps {
   name: string;
   isOpen: boolean;
+  isOffline?: boolean;
   onClose: () => void;
 }
 
-const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
+const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = false, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { toast } = useToast();
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   const screenId = `screen-${name.toLowerCase()}-full`;
+
+  useEffect(() => {
+    // Create audio element when component mounts
+    audioRef.current = new Audio('/audio/porquenotrabalha.mp3');
+    
+    return () => {
+      // Cleanup audio when component unmounts
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && isOffline && audioRef.current) {
+      // Play audio when modal opens for offline collaborator
+      audioRef.current.play()
+        .catch(err => {
+          console.error('Failed to play audio:', err);
+          toast({
+            title: "Não foi possível reproduzir o áudio",
+            description: "Verifique se seu navegador permite reprodução automática",
+            variant: "destructive"
+          });
+        });
+    }
+  }, [isOpen, isOffline, toast]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -38,20 +70,31 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, onClose }) => {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
       document.body.style.overflow = 'auto';
+      
+      // Stop audio when modal closes
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop animate-fade-in">
+    <div className="modal-backdrop fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
       <div 
         ref={modalRef}
         className="bg-card rounded-lg overflow-hidden border border-border shadow-xl w-full mx-4 animate-scale-in"
         style={{ maxWidth: '672px' }} // Um pouco maior que 640px para dar margem
       >
         <div className="px-4 py-3 bg-muted flex items-center justify-between">
-          <span className="font-medium">Tela de {formattedName}</span>
+          <div className="flex items-center space-x-2">
+            <span className="font-medium">Tela de {formattedName}</span>
+            {isOffline && (
+              <span className="bg-red-500/20 text-red-500 text-xs px-2 py-0.5 rounded-full">Offline</span>
+            )}
+          </div>
           <button 
             onClick={onClose}
             className="p-1 rounded-full hover:bg-background/50 transition-colors"

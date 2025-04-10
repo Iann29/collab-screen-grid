@@ -9,11 +9,22 @@ interface ScreenCardProps {
   isOwner?: boolean;
   customLabel?: string;
   onClick: () => void;
+  isOffline?: boolean;
 }
 
-const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLabel, onClick }) => {
+const ScreenCard: React.FC<ScreenCardProps> = ({ 
+  name, 
+  isOwner = false, 
+  customLabel, 
+  onClick,
+  isOffline = true // Default to offline for now
+}) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   const screenId = `screen-${name.toLowerCase()}`;
+  
+  const handleClick = () => {
+    onClick();
+  };
   
   return (
     <div className="rounded-lg overflow-hidden bg-secondary border border-border hover:border-primary/50 transition-all duration-300">
@@ -24,12 +35,15 @@ const ScreenCard: React.FC<ScreenCardProps> = ({ name, isOwner = false, customLa
             <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{customLabel}</span>
           )}
         </div>
-        <div className="h-2 w-2 rounded-full bg-red-500" title="Offline"></div>
+        <div 
+          className={`h-2 w-2 rounded-full ${isOffline ? 'bg-red-500' : 'bg-green-500'}`} 
+          title={isOffline ? "Offline" : "Online"}
+        ></div>
       </div>
       
       <div 
         className="relative cursor-pointer group"
-        onClick={onClick}
+        onClick={handleClick}
       >
         <img
           id={screenId}

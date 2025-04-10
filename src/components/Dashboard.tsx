@@ -4,20 +4,22 @@ import ScreenCard from './ScreenCard';
 import ScreenModal from './ScreenModal';
 
 const collaborators = [
-  { name: 'Ian', isOwner: true, label: 'Dev++++' },
-  { name: 'Matheus', isOwner: false, label: 'Designer+' },
-  { name: 'Andi', isOwner: false, label: 'Vagabundo' },
-  { name: 'Giovani', isOwner: false, label: 'Trator' },
-  { name: 'Julio', isOwner: false, label: 'Vadio' },
-  { name: 'Pedro', isOwner: false, label: 'Unico que presta' },
-  { name: 'Vini', isOwner: false, label: 'Nunca aparece' }
+  { name: 'Ian', isOwner: true, label: 'Dev++++', isOffline: false },
+  { name: 'Matheus', isOwner: false, label: 'Designer+', isOffline: true },
+  { name: 'Andi', isOwner: false, label: 'Vagabundo', isOffline: true },
+  { name: 'Giovani', isOwner: false, label: 'Trator', isOffline: true },
+  { name: 'Julio', isOwner: false, label: 'Vadio', isOffline: true },
+  { name: 'Pedro', isOwner: false, label: 'Unico que presta', isOffline: false },
+  { name: 'Vini', isOwner: false, label: 'Nunca aparece', isOffline: true }
 ];
 
 const Dashboard: React.FC = () => {
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
   
-  const handleOpenModal = (name: string) => {
+  const handleOpenModal = (name: string, offline: boolean) => {
     setSelectedScreen(name);
+    setIsOffline(offline);
   };
   
   const handleCloseModal = () => {
@@ -31,14 +33,15 @@ const Dashboard: React.FC = () => {
         <p className="text-muted-foreground">Monitore as telas da sua equipe em tempo real</p>
       </div>
       
-      <div className="screen-grid">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {collaborators.map((collaborator) => (
           <ScreenCard
             key={collaborator.name}
             name={collaborator.name}
             isOwner={collaborator.isOwner}
             customLabel={collaborator.label}
-            onClick={() => handleOpenModal(collaborator.name)}
+            isOffline={collaborator.isOffline}
+            onClick={() => handleOpenModal(collaborator.name, collaborator.isOffline)}
           />
         ))}
       </div>
@@ -47,6 +50,7 @@ const Dashboard: React.FC = () => {
         <ScreenModal
           name={selectedScreen}
           isOpen={true}
+          isOffline={isOffline}
           onClose={handleCloseModal}
         />
       )}
