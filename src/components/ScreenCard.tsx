@@ -2,6 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import placeholderImage from '/placeholder.svg';
+import chinaGif from '/gif/china.gif';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ScreenCardProps {
@@ -50,12 +51,20 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         onClick={handleClick}
       >
         <AspectRatio ratio={4/3} className="w-full">
-          <img
-            id={screenId}
-            src={placeholderImage}
-            alt={`Tela de ${formattedName}`}
-            className="w-full h-full object-cover"
-          />
+          {isOffline ? (
+            <img
+              src={chinaGif}
+              alt={`Tela de ${formattedName} (offline)`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img
+              id={screenId}
+              src={placeholderImage}
+              alt={`Tela de ${formattedName}`}
+              className="w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
             <span className="text-xs font-medium bg-background/80 text-foreground px-2 py-1 rounded">Clique para expandir</span>
           </div>
