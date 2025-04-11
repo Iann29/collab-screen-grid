@@ -1,3 +1,4 @@
+
 type WebSocketMessage = {
   type: string;
   id?: string;
@@ -52,6 +53,7 @@ class WebSocketService {
         if (screenId) {
           console.log("Updating image for screen:", screenId);
           
+          // Use exactly the ID that came from the server
           const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
@@ -63,10 +65,11 @@ class WebSocketService {
             console.log(`Could not find image element with ID: ${screenId}`);
           }
           
+          // For the modal, we append -full to the ID
           const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
           if (modalImgElement && message.data) {
             modalImgElement.src = `data:image/jpeg;base64,${message.data}`;
-            console.log(`Updated image for modal: ${screenId}-full`);
+            console.log(`Updated modal image for: ${screenId}-full`);
           }
         }
       }

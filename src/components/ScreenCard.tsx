@@ -62,7 +62,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
             />
           ) : (
             <img
-              id={screenId} // This ID must match exactly what the server sends
+              id={screenId}
               src={placeholderImage}
               alt={`Tela de ${formattedName}`}
               className="w-full h-full object-cover"
