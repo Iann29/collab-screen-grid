@@ -53,8 +53,9 @@ class WebSocketService {
         
         if (screenId) {
           // Update both the card and modal images if they exist
-          const imgElement = document.getElementById(screenId);
-          const modalImgElement = document.getElementById(`${screenId}-full`);
+          // Cast to HTMLImageElement to access the src property
+          const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
+          const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
           
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
