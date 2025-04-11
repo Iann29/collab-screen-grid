@@ -6,7 +6,7 @@ type WebSocketMessage = {
   time?: string;
 };
 
-// Nova interface para rastreamento de atividade
+// Interface para rastreamento de atividade
 type ActivityTracker = {
   [screenId: string]: {
     lastUpdate: number;
@@ -14,22 +14,25 @@ type ActivityTracker = {
   }
 };
 
+// Configurações globais para controle de logs
+const DEBUG_MODE = false; // Defina como true apenas durante debug
+
 class WebSocketService {
   private socket: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: number | null = null;
   private pingInterval: number | null = null;
-  // Novo: Timer para verificar atividade
   private activityCheckInterval: number | null = null;
-  // Novo: Rastreamento da última atualização para cada tela
   private activityTracker: ActivityTracker = {};
-  // Novo: Tempo máximo sem atualizações antes de considerar offline (5 segundos)
-  private offlineTimeout = 5000;
+  // Reduzido para 2 segundos para detecção mais rápida de offline
+  private offlineTimeout = 2000;
+  // Controle para evitar notificações duplicadas
+  private lastNotificationStatus: {[screenId: string]: boolean} = {};
 
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      console.log("WebSocket connection already open");
+      this.debugLog("WebSocket connection already open");
       return;
     }
 
@@ -45,7 +48,7 @@ class WebSocketService {
   }
 
   private handleOpen() {
-    console.log("WebSocket connection established!");
+    this.debugLog("WebSocket connection established!");
     this.reconnectAttempts = 0;
 
     this.send({
@@ -53,43 +56,38 @@ class WebSocketService {
       id: "viewer-web"
     });
     
-    console.log("Sent identity as viewer-web");
+    this.debugLog("Sent identity as viewer-web");
   }
 
   private handleMessage(event: MessageEvent) {
     try {
       const message = JSON.parse(event.data) as WebSocketMessage;
-      console.log("Received message:", message.type, message.id);
+      // Log reduzido para mensagens importantes
+      if (message.type !== "image") {
+        this.debugLog("Received message:", message.type, message.id);
+      }
       
       if (message.type === "image") {
         const screenId = message.id;
         
         if (screenId) {
-          console.log("Updating image for screen:", screenId);
-          
-          // Atualiza o rastreador de atividade quando recebe uma nova imagem
+          // Atualize rastreador antes de qualquer outra operação
           this.updateActivity(screenId, true);
           
           // Use exactly the ID that came from the server
           const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
-            console.log(`Updated image for: ${screenId}`);
             
+            // Notificar mudança de status apenas se necessário (evitar redundância)
             const username = screenId.replace('screen-', '');
             this.updateScreenStatus(username, true);
-          } else {
-            console.log(`Could not find image element with ID: ${screenId}`);
-            // Debug: list all screen-related elements
-            const screenElements = Array.from(document.querySelectorAll('[id^="screen-"]'));
-            console.log("Available screen elements:", screenElements.map(el => el.id));
           }
           
           // For the modal, we append -full to the ID
           const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
           if (modalImgElement && message.data) {
             modalImgElement.src = `data:image/jpeg;base64,${message.data}`;
-            console.log(`Updated modal image for: ${screenId}-full`);
           }
         }
       }
@@ -98,49 +96,51 @@ class WebSocketService {
     }
   }
 
-  // Novo método para atualizar o rastreador de atividade
+  // Método para atualizar o rastreador de atividade
   private updateActivity(screenId: string, isOnline: boolean) {
+    const previousStatus = this.activityTracker[screenId]?.isOnline;
+    
     this.activityTracker[screenId] = {
       lastUpdate: Date.now(),
       isOnline
     };
-    console.log(`Activity updated for ${screenId}: ${isOnline ? 'online' : 'offline'}`);
+    
+    // Log somente quando o status muda
+    if (previousStatus !== isOnline) {
+      this.debugLog(`Activity updated for ${screenId}: ${isOnline ? 'online' : 'offline'}`);
+    }
   }
   
-  // Novo método para verificar inatividade periodicamente
+  // Método otimizado para verificar inatividade
   private checkActivity() {
     const now = Date.now();
     
     Object.entries(this.activityTracker).forEach(([screenId, activity]) => {
       // Se estiver online e o timeout tiver sido excedido
       if (activity.isOnline && now - activity.lastUpdate > this.offlineTimeout) {
-        console.log(`${screenId} timed out (${now - activity.lastUpdate}ms inactive)`);
         // Atualiza o status para offline
         this.updateActivity(screenId, false);
         
-        // Notifica a interface que o usuário está offline
+        // Extrai username do screenId e notifica a interface
         const username = screenId.replace('screen-', '');
         this.updateScreenStatus(username, false);
+        
+        this.debugLog(`${screenId} timed out (${now - activity.lastUpdate}ms inactive)`);
       }
     });
   }
   
-  // Novo método para iniciar verificação de atividade
   private startActivityCheck() {
-    // Limpa intervalo anterior se existir
     if (this.activityCheckInterval !== null) {
       window.clearInterval(this.activityCheckInterval);
     }
     
-    // Verifica atividade a cada 1 segundo
+    // Verificação mais frequente (500ms) para detecção mais responsiva
     this.activityCheckInterval = window.setInterval(() => {
       this.checkActivity();
-    }, 1000);
-    
-    console.log("Activity check started");
+    }, 500);
   }
   
-  // Adiciona limpeza do intervalo de verificação de atividade
   private stopActivityCheck() {
     if (this.activityCheckInterval !== null) {
       window.clearInterval(this.activityCheckInterval);
@@ -148,13 +148,25 @@ class WebSocketService {
     }
   }
 
+  // Método otimizado para evitar disparos duplicados de eventos
   private updateScreenStatus(username: string, isOnline: boolean) {
-    console.log(`Updating status for ${username}: ${isOnline ? 'online' : 'offline'}`);
+    const normalizedUsername = username.toLowerCase();
     
+    // Evita notificações repetidas do mesmo status
+    if (this.lastNotificationStatus[normalizedUsername] === isOnline) {
+      return;
+    }
+    
+    // Atualiza o registro do último status notificado
+    this.lastNotificationStatus[normalizedUsername] = isOnline;
+    
+    // Dispara o evento de mudança de status
     const event = new CustomEvent('screen-status-change', { 
-      detail: { username, isOnline }
+      detail: { username: normalizedUsername, isOnline }
     });
     window.dispatchEvent(event);
+    
+    this.debugLog(`Status updated for ${normalizedUsername}: ${isOnline ? 'online' : 'offline'}`);
   }
 
   private handleError(error: Event) {
@@ -162,12 +174,12 @@ class WebSocketService {
   }
 
   private handleClose(event: CloseEvent) {
-    console.log(`WebSocket connection closed, code: ${event.code}`);
+    this.debugLog(`WebSocket connection closed, code: ${event.code}`);
     
     this.stopPingInterval();
     this.stopActivityCheck();
     
-    // Marca todos como offline quando o WebSocket fecha
+    // Marca todos como offline
     Object.keys(this.activityTracker).forEach(screenId => {
       const username = screenId.replace('screen-', '');
       this.updateScreenStatus(username, false);
@@ -181,10 +193,10 @@ class WebSocketService {
       this.reconnectAttempts++;
       
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      console.log(`Attempting to reconnect in ${delay/1000} seconds...`);
+      this.debugLog(`Attempting to reconnect in ${delay/1000} seconds...`);
       
       this.reconnectTimeout = window.setTimeout(() => {
-        console.log(`Reconnect attempt ${this.reconnectAttempts}`);
+        this.debugLog(`Reconnect attempt ${this.reconnectAttempts}`);
         this.connect();
       }, delay);
     } else {
@@ -215,7 +227,10 @@ class WebSocketService {
   send(message: WebSocketMessage) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
-      console.log("Sent message:", message.type);
+      // Somente log para mensagens não-imagem
+      if (message.type !== "image") {
+        this.debugLog("Sent message:", message.type);
+      }
     } else {
       console.warn("Cannot send message, WebSocket is not open");
     }
@@ -240,6 +255,19 @@ class WebSocketService {
       const username = screenId.replace('screen-', '');
       this.updateScreenStatus(username, false);
     });
+  }
+  
+  // Método de debug para reduzir logs
+  private debugLog(...args: any[]) {
+    if (DEBUG_MODE) {
+      console.log(...args);
+    }
+  }
+  
+  // Método público para verificar status de uma tela
+  isScreenOnline(username: string): boolean {
+    const screenId = `screen-${username.toLowerCase()}`;
+    return !!this.activityTracker[screenId]?.isOnline;
   }
 }
 

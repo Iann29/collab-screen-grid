@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
 import chinaGif from '/gif/china.gif';
 import { useToast } from '@/hooks/use-toast';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { websocketService } from '@/services/websocket';
 
 interface ScreenModalProps {
   name: string;
@@ -12,51 +13,74 @@ interface ScreenModalProps {
   onClose: () => void;
 }
 
-const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = false, onClose }) => {
+const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline: initialOffline = false, onClose }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioPlayedRef = useRef<boolean>(false);
   const { toast } = useToast();
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   
-  // CRITICAL: O ID base é o mesmo que no card, mas no modal adicionamos o sufixo '-full'
+  // Use estado interno para evitar piscar/flickering
+  const [isOffline, setIsOffline] = useState(initialOffline);
+  
+  // IMPORTANT: Normalized IDs
   const screenId = `screen-${name.toLowerCase()}`;
   const modalScreenId = `${screenId}-full`;
 
+  // Verificação de status real antes de montar o componente
   useEffect(() => {
-    // Debug para verificar se o ID está correto
-    console.log(`Modal screen ID: ${modalScreenId}`);
+    // Primeiro usa o status passado via props (para consistência inicial)
+    setIsOffline(initialOffline);
+
+    // Verifica o status atual no websocketService (mais preciso)
+    const realStatus = !websocketService.isScreenOnline(name);
+    setIsOffline(realStatus);
     
-    // Create audio element when component mounts
+    // Listener para mudanças de status durante a exibição do modal
+    const handleScreenStatusChange = (event: CustomEvent<{ username: string, isOnline: boolean }>) => {
+      const { username, isOnline } = event.detail;
+      if (username.toLowerCase() === name.toLowerCase()) {
+        setIsOffline(!isOnline);
+      }
+    };
+    
+    window.addEventListener('screen-status-change', handleScreenStatusChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('screen-status-change', handleScreenStatusChange as EventListener);
+    };
+  }, [name, initialOffline]);
+  
+  // Inicialização e limpeza do áudio
+  useEffect(() => {
     audioRef.current = new Audio('/audio/porquenotrabalha.mp3');
     
     return () => {
-      // Cleanup audio when component unmounts
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      // Reset para o próximo uso do modal
+      audioPlayedRef.current = false;
     };
-  }, [modalScreenId]);
+  }, []);
 
-  // Reset and play audio when name or offline status changes
+  // Lógica melhorada para reprodução de áudio apenas quando realmente necessário
   useEffect(() => {
-    if (isOpen && isOffline && audioRef.current) {
-      // Reset audio to beginning
-      audioRef.current.currentTime = 0;
+    // Só toca o áudio quando o modal é aberto E está offline E ainda não tocou nesta sessão
+    if (isOpen && isOffline && audioRef.current && !audioPlayedRef.current) {
+      // Marca que o áudio já foi tocado nesta sessão de modal
+      audioPlayedRef.current = true;
       
-      // Play audio when modal opens for offline collaborator
-      audioRef.current.play()
-        .catch(err => {
-          console.error('Failed to play audio:', err);
-          toast({
-            title: "Não foi possível reproduzir o áudio",
-            description: "Verifique se seu navegador permite reprodução automática",
-            variant: "destructive"
-          });
-        });
+      // Reproduz o áudio
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => {
+        console.error('Failed to play audio:', err);
+      });
     }
-  }, [isOpen, isOffline, toast, name]);
+  }, [isOpen, isOffline]);
 
+  // Manipulação de eventos do modal
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -96,7 +120,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
       <div 
         ref={modalRef}
         className="bg-card rounded-lg overflow-hidden border border-border shadow-xl w-full mx-4 animate-scale-in"
-        style={{ maxWidth: '672px' }} // Um pouco maior que 640px para dar margem
+        style={{ maxWidth: '672px' }}
       >
         <div className="px-4 py-3 bg-muted flex items-center justify-between">
           <div className="flex items-center space-x-2">

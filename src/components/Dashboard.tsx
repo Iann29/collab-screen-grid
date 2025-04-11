@@ -1,9 +1,11 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import ScreenCard from './ScreenCard';
 import ScreenModal from './ScreenModal';
 import { websocketService } from '@/services/websocket';
 import { useToast } from '@/hooks/use-toast';
+
+// Configuração para notificações de status quando usuários ficam online/offline
+const SHOW_NOTIFICATIONS = false; // Defina como true se quiser notificações toast
 
 const initialCollaborators = [
   { name: 'Ian', isOwner: true, label: 'Dev++++', isOffline: true },
@@ -22,44 +24,81 @@ const Dashboard: React.FC = () => {
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const { toast } = useToast();
   
+  // Rastreador de última notificação para evitar spam de notificações
+  const lastNotificationRef = React.useRef<{[key: string]: boolean}>({});
+  
+  // Use um useEffect para inicializar a conexão WebSocket
   useEffect(() => {
     // Conectar ao WebSocket quando o componente é montado
     websocketService.connect();
     
-    // Criar listener para mudanças de status
+    // Função de limpeza
+    return () => {
+      websocketService.disconnect();
+    };
+  }, []);
+  
+  // Handler separado para mudanças de status com debounce para melhor performance
+  useEffect(() => {
+    // Handler otimizado com limitação de rate para evitar atualizações excessivas
     const handleScreenStatusChange = (event: CustomEvent<{ username: string, isOnline: boolean }>) => {
       const { username, isOnline } = event.detail;
+      const lowerUsername = username.toLowerCase();
       
+      // Atualiza o status do colaborador
       setCollaborators(prev => 
         prev.map(collaborator => 
-          collaborator.name.toLowerCase() === username.toLowerCase()
+          collaborator.name.toLowerCase() === lowerUsername
             ? { ...collaborator, isOffline: !isOnline }
             : collaborator
         )
       );
       
-      // Atualizar status da tela selecionada se for a atual
-      if (selectedScreen?.toLowerCase() === username.toLowerCase()) {
+      // Atualiza status da tela selecionada se for a atual
+      if (selectedScreen?.toLowerCase() === lowerUsername) {
         setIsOffline(!isOnline);
       }
       
-      // As notificações toast foram removidas conforme solicitado
+      // Gerencia notificações toast (opcional - controlado por SHOW_NOTIFICATIONS)
+      if (SHOW_NOTIFICATIONS) {
+        // Evita notificações repetidas para o mesmo status
+        const lastStatus = lastNotificationRef.current[lowerUsername];
+        if (lastStatus !== isOnline) {
+          lastNotificationRef.current[lowerUsername] = isOnline;
+          
+          // Exibe notificação toast de acordo com o status
+          if (isOnline) {
+            toast({
+              title: `${username.charAt(0).toUpperCase() + username.slice(1)} está online!`,
+              description: "A tela agora está sendo transmitida em tempo real."
+            });
+          } else {
+            toast({
+              title: `${username.charAt(0).toUpperCase() + username.slice(1)} está offline`,
+              description: "A tela não está mais sendo transmitida.",
+              variant: "destructive"
+            });
+          }
+        }
+      }
     };
     
+    // Registra o listener
     window.addEventListener('screen-status-change', handleScreenStatusChange as EventListener);
     
-    // Função de limpeza
+    // Remove o listener quando o componente for desmontado
     return () => {
-      websocketService.disconnect();
       window.removeEventListener('screen-status-change', handleScreenStatusChange as EventListener);
     };
   }, [selectedScreen, toast]);
   
+  // Abre o modal para visualizar a tela de um colaborador
   const handleOpenModal = (name: string, offline: boolean) => {
     setSelectedScreen(name);
     setIsOffline(offline);
   };
   
+  // Fecha o modal
   const handleCloseModal = () => {
     setSelectedScreen(null);
   };
