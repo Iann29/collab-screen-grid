@@ -14,8 +14,19 @@ type ActivityTracker = {
   }
 };
 
+// URL do WebSocket - permite trocar facilmente entre ambientes
+const WS_URL = {
+  development: "ws://89.117.32.119:8000/ws",                // Dev local (inseguro)
+  production: "wss://socket.magodohayday.com/ws"            // Produção (seguro)
+};
+
+// Escolher automaticamente baseado no ambiente
+const CURRENT_WS_URL = window.location.protocol === 'https:' 
+  ? WS_URL.production
+  : WS_URL.development;
+
 // Configurações globais para controle de logs
-const DEBUG_MODE = false; // Defina como true apenas durante debug
+const DEBUG_MODE = false;
 
 class WebSocketService {
   private socket: WebSocket | null = null;
@@ -25,9 +36,7 @@ class WebSocketService {
   private pingInterval: number | null = null;
   private activityCheckInterval: number | null = null;
   private activityTracker: ActivityTracker = {};
-  // Reduzido para 2 segundos para detecção mais rápida de offline
   private offlineTimeout = 2000;
-  // Controle para evitar notificações duplicadas
   private lastNotificationStatus: {[screenId: string]: boolean} = {};
 
   connect() {
@@ -36,15 +45,20 @@ class WebSocketService {
       return;
     }
 
-    this.socket = new WebSocket("ws://89.117.32.119:8000/ws");
+    try {
+      // Usar a URL apropriada baseada no ambiente
+      this.socket = new WebSocket(CURRENT_WS_URL);
 
-    this.socket.onopen = this.handleOpen.bind(this);
-    this.socket.onmessage = this.handleMessage.bind(this);
-    this.socket.onerror = this.handleError.bind(this);
-    this.socket.onclose = this.handleClose.bind(this);
+      this.socket.onopen = this.handleOpen.bind(this);
+      this.socket.onmessage = this.handleMessage.bind(this);
+      this.socket.onerror = this.handleError.bind(this);
+      this.socket.onclose = this.handleClose.bind(this);
 
-    this.startPingInterval();
-    this.startActivityCheck();
+      this.startPingInterval();
+      this.startActivityCheck();
+    } catch (error) {
+      console.error("Failed to create WebSocket connection:", error);
+    }
   }
 
   private handleOpen() {
