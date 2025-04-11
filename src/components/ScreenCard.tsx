@@ -2,7 +2,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import placeholderImage from '/placeholder.svg';
-import chinaGif from '/gif/china.gif';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ScreenCardProps {
@@ -53,7 +52,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         <AspectRatio ratio={4/3} className="w-full">
           <img
             id={screenId}
-            src={chinaGif}
+            src={placeholderImage}
             alt={`Tela de ${formattedName}`}
             className="w-full h-full object-cover"
           />

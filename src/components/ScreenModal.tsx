@@ -1,7 +1,7 @@
+
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
-import chinaGif from '/gif/china.gif';
 import { useToast } from '@/hooks/use-toast';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
@@ -110,7 +110,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
           <AspectRatio ratio={4/3} className="w-full overflow-hidden">
             <img
               id={screenId}
-              src={chinaGif}
+              src={placeholderImage}
               alt={`Tela de ${formattedName} (expandida)`}
               className="w-full h-full object-cover"
             />
