@@ -1,3 +1,4 @@
+// src/services/websocket.ts
 type WebSocketMessage = {
   type: string;
   id?: string;
@@ -14,41 +15,46 @@ type ActivityTracker = {
   }
 };
 
-// URL do WebSocket - permite trocar facilmente entre ambientes
-const WS_URL = {
-  development: "ws://89.117.32.119:8000/ws",                // Dev local (inseguro)
-  production: "wss://socket.magodohayday.com/ws"            // Produção (seguro)
+// Configuração para conectar ao servidor WebSocket
+const CONFIG = {
+  // URL do WebSocket - use o socket.magodohayday.com com WSS
+  WS_URL: "wss://socket.magodohayday.com/ws",
+  
+  // Timeouts e intervalos
+  TIMEOUT: {
+    offline: 3000,        // Tempo após o qual uma tela é considerada offline (ms)
+    ping: 30000,          // Intervalo de ping para manter a conexão ativa (ms)
+    activityCheck: 1000   // Com que frequência verificar telas inativas (ms)
+  },
+  // Número máximo de tentativas de reconexão
+  MAX_RECONNECT_ATTEMPTS: 10,
+  // Ativa logs detalhados para depuração
+  DEBUG_MODE: true
 };
-
-// Escolher automaticamente baseado no ambiente
-const CURRENT_WS_URL = window.location.protocol === 'https:' 
-  ? WS_URL.production
-  : WS_URL.development;
-
-// Configurações globais para controle de logs
-const DEBUG_MODE = false;
 
 class WebSocketService {
   private socket: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
   private reconnectTimeout: number | null = null;
   private pingInterval: number | null = null;
   private activityCheckInterval: number | null = null;
   private activityTracker: ActivityTracker = {};
-  private offlineTimeout = 2000;
   private lastNotificationStatus: {[screenId: string]: boolean} = {};
+
+  constructor() {
+    console.log("📡 Serviço WebSocket inicializado");
+  }
 
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) {
-      this.debugLog("WebSocket connection already open");
+      this.debugLog("Conexão WebSocket já está aberta");
       return;
     }
 
     try {
-      // Usar a URL apropriada baseada no ambiente
-      this.socket = new WebSocket(CURRENT_WS_URL);
-
+      console.log(`📡 Conectando ao WebSocket: ${CONFIG.WS_URL}`);
+      
+      this.socket = new WebSocket(CONFIG.WS_URL);
       this.socket.onopen = this.handleOpen.bind(this);
       this.socket.onmessage = this.handleMessage.bind(this);
       this.socket.onerror = this.handleError.bind(this);
@@ -57,60 +63,65 @@ class WebSocketService {
       this.startPingInterval();
       this.startActivityCheck();
     } catch (error) {
-      console.error("Failed to create WebSocket connection:", error);
+      console.error("📡❌ Falha ao criar conexão WebSocket:", error);
+      this.triggerReconnect();
     }
   }
 
   private handleOpen() {
-    this.debugLog("WebSocket connection established!");
+    console.log("📡✅ Conexão WebSocket estabelecida!");
     this.reconnectAttempts = 0;
 
+    // Identifica esta conexão para o servidor
     this.send({
       type: "identify",
       id: "viewer-web"
     });
     
-    this.debugLog("Sent identity as viewer-web");
+    this.debugLog("Identidade enviada como viewer-web");
   }
 
   private handleMessage(event: MessageEvent) {
     try {
       const message = JSON.parse(event.data) as WebSocketMessage;
-      // Log reduzido para mensagens importantes
+      
+      // Registra apenas mensagens que não são imagens
       if (message.type !== "image") {
-        this.debugLog("Received message:", message.type, message.id);
+        this.debugLog("Mensagem recebida:", message.type, message.id);
       }
       
       if (message.type === "image") {
         const screenId = message.id;
         
         if (screenId) {
-          // Atualize rastreador antes de qualquer outra operação
+          // Atualiza rastreador de atividade primeiro
           this.updateActivity(screenId, true);
           
-          // Use exactly the ID that came from the server
+          // Atualiza a imagem em miniatura
           const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
             
-            // Notificar mudança de status apenas se necessário (evitar redundância)
+            // Extrai nome de usuário do screenId e atualiza status
             const username = screenId.replace('screen-', '');
             this.updateScreenStatus(username, true);
           }
           
-          // For the modal, we append -full to the ID
+          // Atualiza a imagem modal (expandida) se visível
           const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
           if (modalImgElement && message.data) {
             modalImgElement.src = `data:image/jpeg;base64,${message.data}`;
           }
         }
+      } else if (message.type === "pong") {
+        this.debugLog("Pong recebido do servidor");
       }
     } catch (error) {
-      console.error("Error processing message:", error);
+      console.error("Erro ao processar mensagem:", error);
     }
   }
 
-  // Método para atualizar o rastreador de atividade
+  // Rastreia atividade para cada tela
   private updateActivity(screenId: string, isOnline: boolean) {
     const previousStatus = this.activityTracker[screenId]?.isOnline;
     
@@ -119,40 +130,36 @@ class WebSocketService {
       isOnline
     };
     
-    // Log somente quando o status muda
+    // Registra apenas quando o status muda
     if (previousStatus !== isOnline) {
-      this.debugLog(`Activity updated for ${screenId}: ${isOnline ? 'online' : 'offline'}`);
+      this.debugLog(`Atividade atualizada para ${screenId}: ${isOnline ? 'online' : 'offline'}`);
     }
   }
   
-  // Método otimizado para verificar inatividade
   private checkActivity() {
     const now = Date.now();
     
     Object.entries(this.activityTracker).forEach(([screenId, activity]) => {
-      // Se estiver online e o timeout tiver sido excedido
-      if (activity.isOnline && now - activity.lastUpdate > this.offlineTimeout) {
-        // Atualiza o status para offline
+      // Se online e timeout excedido, marca como offline
+      if (activity.isOnline && now - activity.lastUpdate > CONFIG.TIMEOUT.offline) {
+        // Atualiza rastreador de atividade
         this.updateActivity(screenId, false);
         
-        // Extrai username do screenId e notifica a interface
+        // Notifica interface da mudança de status
         const username = screenId.replace('screen-', '');
         this.updateScreenStatus(username, false);
         
-        this.debugLog(`${screenId} timed out (${now - activity.lastUpdate}ms inactive)`);
+        this.debugLog(`${screenId} marcado como offline após ${now - activity.lastUpdate}ms inativo`);
       }
     });
   }
   
   private startActivityCheck() {
-    if (this.activityCheckInterval !== null) {
-      window.clearInterval(this.activityCheckInterval);
-    }
+    this.stopActivityCheck(); // Limpa qualquer intervalo existente
     
-    // Verificação mais frequente (500ms) para detecção mais responsiva
     this.activityCheckInterval = window.setInterval(() => {
       this.checkActivity();
-    }, 500);
+    }, CONFIG.TIMEOUT.activityCheck);
   }
   
   private stopActivityCheck() {
@@ -162,71 +169,83 @@ class WebSocketService {
     }
   }
 
-  // Método otimizado para evitar disparos duplicados de eventos
+  // Notifica app sobre mudanças de status das telas
   private updateScreenStatus(username: string, isOnline: boolean) {
     const normalizedUsername = username.toLowerCase();
     
-    // Evita notificações repetidas do mesmo status
+    // Evita notificações duplicadas
     if (this.lastNotificationStatus[normalizedUsername] === isOnline) {
       return;
     }
     
-    // Atualiza o registro do último status notificado
+    // Atualiza o último status notificado
     this.lastNotificationStatus[normalizedUsername] = isOnline;
     
-    // Dispara o evento de mudança de status
+    // Dispara evento para componentes UI responderem
     const event = new CustomEvent('screen-status-change', { 
       detail: { username: normalizedUsername, isOnline }
     });
     window.dispatchEvent(event);
     
-    this.debugLog(`Status updated for ${normalizedUsername}: ${isOnline ? 'online' : 'offline'}`);
+    if (isOnline) {
+      console.log(`🟢 Tela ${normalizedUsername} agora está ONLINE`);
+    } else {
+      console.log(`🔴 Tela ${normalizedUsername} agora está OFFLINE`);
+    }
   }
 
   private handleError(error: Event) {
-    console.error("WebSocket connection error:", error);
+    console.error("📡❌ Erro na conexão WebSocket:", error);
   }
 
   private handleClose(event: CloseEvent) {
-    this.debugLog(`WebSocket connection closed, code: ${event.code}`);
+    this.debugLog(`📡🔌 Conexão WebSocket fechada, código: ${event.code}, motivo: ${event.reason || 'Nenhum motivo fornecido'}`);
     
     this.stopPingInterval();
     this.stopActivityCheck();
     
-    // Marca todos como offline
+    // Marca todas as telas como offline
     Object.keys(this.activityTracker).forEach(screenId => {
       const username = screenId.replace('screen-', '');
       this.updateScreenStatus(username, false);
     });
     
-    this.reconnect();
+    this.triggerReconnect();
   }
 
-  private reconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+  private triggerReconnect() {
+    // Limpa qualquer timeout de reconexão existente
+    if (this.reconnectTimeout !== null) {
+      window.clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    if (this.reconnectAttempts < CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++;
       
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      this.debugLog(`Attempting to reconnect in ${delay/1000} seconds...`);
+      // Backoff exponencial com delay máximo de 30 segundos
+      const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
+      console.log(`📡🔄 Tentando reconectar em ${(delay/1000).toFixed(1)} segundos... (tentativa ${this.reconnectAttempts}/${CONFIG.MAX_RECONNECT_ATTEMPTS})`);
       
       this.reconnectTimeout = window.setTimeout(() => {
-        this.debugLog(`Reconnect attempt ${this.reconnectAttempts}`);
         this.connect();
       }, delay);
     } else {
-      console.error("Max reconnect attempts reached. Please refresh the page.");
+      console.error("📡⛔ Máximo de tentativas de reconexão atingido. Por favor, atualize a página.");
     }
   }
 
   private startPingInterval() {
+    this.stopPingInterval(); // Limpa qualquer intervalo existente
+    
     this.pingInterval = window.setInterval(() => {
       this.sendPing();
-    }, 30000);
+    }, CONFIG.TIMEOUT.ping);
   }
 
   private stopPingInterval() {
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
+    if (this.pingInterval !== null) {
+      window.clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
   }
@@ -241,44 +260,46 @@ class WebSocketService {
   send(message: WebSocketMessage) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
-      // Somente log para mensagens não-imagem
+      // Registra apenas mensagens que não são de imagem
       if (message.type !== "image") {
-        this.debugLog("Sent message:", message.type);
+        this.debugLog("Mensagem enviada:", message.type);
       }
     } else {
-      console.warn("Cannot send message, WebSocket is not open");
+      console.warn("📡⚠️ Não foi possível enviar mensagem, WebSocket não está aberto");
     }
   }
 
   disconnect() {
+    this.debugLog("Desconectando WebSocket explicitamente");
+    
     if (this.socket) {
       this.socket.close();
       this.socket = null;
     }
     
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+    if (this.reconnectTimeout !== null) {
+      window.clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
     
     this.stopPingInterval();
     this.stopActivityCheck();
     
-    // Marca todos como offline quando desconecta explicitamente
+    // Marca todas as telas como offline
     Object.keys(this.activityTracker).forEach(screenId => {
       const username = screenId.replace('screen-', '');
       this.updateScreenStatus(username, false);
     });
   }
   
-  // Método de debug para reduzir logs
+  // Logs condicionais
   private debugLog(...args: any[]) {
-    if (DEBUG_MODE) {
-      console.log(...args);
+    if (CONFIG.DEBUG_MODE) {
+      console.log("📡", ...args);
     }
   }
   
-  // Método público para verificar status de uma tela
+  // API pública para verificar status da tela
   isScreenOnline(username: string): boolean {
     const screenId = `screen-${username.toLowerCase()}`;
     return !!this.activityTracker[screenId]?.isOnline;
