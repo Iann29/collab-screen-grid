@@ -1,55 +1,16 @@
+// src/services/supabase.ts
 import { createClient } from '@supabase/supabase-js';
 import { sha256 } from 'js-sha256';
 
-// Substitua essas variáveis com suas credenciais reais do Supabase
-// Idealmente, você deve usar variáveis de ambiente
+// Configuração do Supabase - deve ser configurada no Vercel
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Credenciais do Supabase não configuradas corretamente!');
+  console.error('ERRO: Credenciais do Supabase não configuradas. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// Função para obter o hash da senha de uma variável de ambiente
-const getPasswordHash = (username: string): string | null => {
-  // O formato das variáveis de ambiente é VITE_PASSWORD_HASH_NOMEUSUARIO
-  // Exemplo: VITE_PASSWORD_HASH_IAN para o usuário ian
-  const envVarName = `VITE_PASSWORD_HASH_${username.toUpperCase()}`;
-  const hashFromEnv = import.meta.env[envVarName];
-  
-  // Se a variável de ambiente existir, usamos ela
-  if (hashFromEnv) {
-    return hashFromEnv;
-  }
-  
-  // Caso contrário, retornamos null (usuário não reconhecido)
-  return null;
-};
-
-// Função para criar hash de senha para novos usuários
-// OBS: Só usar para gerar novos hashes, não para verificar senhas!
-const createPasswordHash = (password: string): string => {
-  // Usamos apenas a variável de ambiente para o salt, sem fallback exposto no código
-  const salt = import.meta.env.VITE_PASSWORD_SALT || "";
-  return sha256(`${password}${salt}`);
-};
-
-// Função para verificar se uma senha é válida para um usuário
-const verifyPassword = (username: string, password: string, storedHash: string): boolean => {
-  // Primeiro tentamos obter um hash pré-definido das variáveis de ambiente
-  const predefinedHash = getPasswordHash(username);
-  
-  // Se temos um hash pré-definido, verificamos se ele corresponde ao hash armazenado
-  if (predefinedHash) {
-    return predefinedHash === storedHash;
-  }
-  
-  // Caso contrário, calculamos o hash e comparamos
-  const calculatedHash = createPasswordHash(password);
-  return calculatedHash === storedHash;
-};
 
 // Interface para o usuário autenticado
 export interface User {
@@ -63,9 +24,43 @@ export interface User {
 // Variável para armazenar o usuário atual
 let currentUser: User | null = null;
 
+// Função para calcular hash de senha
+const createPasswordHash = (password: string): string => {
+  const salt = import.meta.env.VITE_PASSWORD_SALT || '';
+  if (!salt) {
+    console.error('ERRO: VITE_PASSWORD_SALT não configurado nas variáveis de ambiente.');
+    return '';
+  }
+  return sha256(`${password}${salt}`);
+};
+
+// Função para verificar hash de senha predefinido
+const verifyWithEnvHash = (username: string, password: string, storedHash: string): boolean => {
+  // Procura o hash predefinido na variável de ambiente
+  const envVarName = `VITE_PASSWORD_HASH_${username.toUpperCase()}`;
+  const predefinedHash = import.meta.env[envVarName];
+  
+  if (predefinedHash) {
+    // Se existir um hash predefinido, usamos ele para comparação direta
+    return predefinedHash === storedHash;
+  }
+  
+  // Se não existir hash predefinido, calcula e compara
+  const calculatedHash = createPasswordHash(password);
+  return calculatedHash === storedHash;
+};
+
 // Funções auxiliares para autenticação
 export const signIn = async (username: string, password: string) => {
   try {
+    // Verifica se as variáveis necessárias estão configuradas
+    if (!import.meta.env.VITE_PASSWORD_SALT) {
+      return { 
+        data: null, 
+        error: new Error("Sistema não configurado corretamente. Contate o administrador.") 
+      };
+    }
+    
     // Normaliza o username (lowercase)
     const normalizedUsername = username.toLowerCase();
     
@@ -77,7 +72,7 @@ export const signIn = async (username: string, password: string) => {
     
     if (error) {
       console.error('Erro ao consultar usuário:', error);
-      return { data: null, error: new Error(`Erro ao conectar ao banco: ${error.message}`) };
+      return { data: null, error: new Error(`Erro ao conectar ao banco de dados`) };
     }
     
     if (!users || users.length === 0) {
@@ -86,8 +81,8 @@ export const signIn = async (username: string, password: string) => {
     
     const user = users[0];
     
-    // Verifica a senha usando a nova função de verificação
-    const isPasswordValid = verifyPassword(normalizedUsername, password, user.password_hash);
+    // Verifica o hash da senha
+    const isPasswordValid = verifyWithEnvHash(normalizedUsername, password, user.password_hash);
     
     if (!isPasswordValid) {
       return { data: null, error: new Error("Senha inválida") };
@@ -100,7 +95,7 @@ export const signIn = async (username: string, password: string) => {
       .eq('id', user.id);
     
     if (updateError) {
-      console.warn(`Aviso: Falha ao atualizar last_login: ${updateError.message}`);
+      console.warn(`Aviso: Falha ao atualizar last_login`);
     }
     
     // Armazena o usuário atual
@@ -108,8 +103,8 @@ export const signIn = async (username: string, password: string) => {
     
     return { data: user, error: null };
   } catch (error: any) {
-    console.error('Erro de autenticação:', error);
-    return { data: null, error };
+    console.error('Erro de autenticação');
+    return { data: null, error: new Error("Erro no processo de autenticação") };
   }
 };
 
@@ -150,7 +145,7 @@ export const getHtmlId = async (username?: string): Promise<string | null> => {
     
     return data[0].html_id;
   } catch (error) {
-    console.error(`Erro ao obter HTML ID: ${error}`);
+    console.error(`Erro ao obter HTML ID`);
     return null;
   }
 };
