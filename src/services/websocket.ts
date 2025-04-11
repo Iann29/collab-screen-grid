@@ -17,8 +17,8 @@ type ActivityTracker = {
 
 // Configuração para conectar ao servidor WebSocket
 const CONFIG = {
-  // URL do WebSocket - use o socket.magodohayday.com com WSS
-  WS_URL: "wss://socket.magodohayday.com/ws",
+  // URL do WebSocket - INCLUINDO A PORTA 8000 que é obrigatória
+  WS_URL: "wss://socket.magodohayday.com:8000/ws",
   
   // Timeouts e intervalos
   TIMEOUT: {
@@ -121,6 +121,8 @@ class WebSocketService {
     }
   }
 
+  // Resto do código permanece o mesmo...
+  
   // Rastreia atividade para cada tela
   private updateActivity(screenId: string, isOnline: boolean) {
     const previousStatus = this.activityTracker[screenId]?.isOnline;
