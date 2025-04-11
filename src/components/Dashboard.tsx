@@ -106,8 +106,8 @@ const Dashboard: React.FC = () => {
   return (
     <div className="container px-4 py-8 mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Painel de Colaboração</h1>
-        <p className="text-muted-foreground">Monitore as telas da sua equipe em tempo real</p>
+        <h1 className="text-2xl font-bold mb-2">Painel de Controle de Emuladores</h1>
+        <p className="text-muted-foreground">Monitore e controle as ações dos emuladores em tempo real</p>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
