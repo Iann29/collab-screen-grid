@@ -38,10 +38,16 @@ const createPasswordHash = (password: string): string => {
 
 // Função para verificar se uma senha é válida para um usuário
 const verifyPassword = (username: string, password: string, storedHash: string): boolean => {
-  // Calcular o hash da senha fornecida pelo usuário
-  const calculatedHash = createPasswordHash(password);
+  // Primeiro tentamos obter um hash pré-definido das variáveis de ambiente
+  const predefinedHash = getPasswordHash(username);
   
-  // Comparar o hash calculado com o hash armazenado no banco
+  // Se temos um hash pré-definido, verificamos se ele corresponde ao hash armazenado
+  if (predefinedHash) {
+    return predefinedHash === storedHash;
+  }
+  
+  // Caso contrário, calculamos o hash e comparamos
+  const calculatedHash = createPasswordHash(password);
   return calculatedHash === storedHash;
 };
 
