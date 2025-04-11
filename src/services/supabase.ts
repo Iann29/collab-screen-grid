@@ -31,7 +31,8 @@ const getPasswordHash = (username: string): string | null => {
 // Função para criar hash de senha para novos usuários
 // OBS: Só usar para gerar novos hashes, não para verificar senhas!
 const createPasswordHash = (password: string): string => {
-  const salt = import.meta.env.VITE_PASSWORD_SALT || "hayday_bot_secure_salt";
+  // Usamos apenas a variável de ambiente para o salt, sem fallback exposto no código
+  const salt = import.meta.env.VITE_PASSWORD_SALT || "";
   return sha256(`${password}${salt}`);
 };
 
