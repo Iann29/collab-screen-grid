@@ -23,6 +23,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   labelColor
 }) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  // Important: Make sure the screenId matches exactly what the server sends
   const screenId = `screen-${name.toLowerCase()}`;
   
   const handleClick = () => {

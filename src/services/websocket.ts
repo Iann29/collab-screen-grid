@@ -1,3 +1,4 @@
+
 type WebSocketMessage = {
   type: string;
   id?: string;
@@ -37,27 +38,42 @@ class WebSocketService {
       type: "identify",
       id: "viewer-web"
     });
+    
+    // Log that we've successfully connected and identified
+    console.log("Sent identity as viewer-web");
   }
 
   private handleMessage(event: MessageEvent) {
     try {
       const message = JSON.parse(event.data) as WebSocketMessage;
+      console.log("Received message:", message.type, message.id);
       
       if (message.type === "image") {
         const screenId = message.id;
         
         if (screenId) {
-          const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
-          const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
+          console.log("Updating image for screen:", screenId);
           
+          // Convert from screen-username format to just username for status updates
+          const username = screenId.replace('screen-', '');
+          
+          // Update image in card view
+          const imgElement = document.getElementById(`screen-${username}`) as HTMLImageElement | null;
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
+            console.log(`Updated image for card: screen-${username}`);
             
-            this.updateScreenStatus(screenId, true);
+            // Update screen status to online
+            this.updateScreenStatus(username, true);
+          } else {
+            console.log(`Could not find image element: screen-${username}`);
           }
           
+          // Update image in modal if open
+          const modalImgElement = document.getElementById(`screen-${username}-full`) as HTMLImageElement | null;
           if (modalImgElement && message.data) {
             modalImgElement.src = `data:image/jpeg;base64,${message.data}`;
+            console.log(`Updated image for modal: screen-${username}-full`);
           }
         }
       }
@@ -66,8 +82,8 @@ class WebSocketService {
     }
   }
 
-  private updateScreenStatus(screenId: string, isOnline: boolean) {
-    const username = screenId.replace('screen-', '');
+  private updateScreenStatus(username: string, isOnline: boolean) {
+    console.log(`Updating status for ${username}: ${isOnline ? 'online' : 'offline'}`);
     
     const event = new CustomEvent('screen-status-change', { 
       detail: { username, isOnline }
@@ -126,6 +142,7 @@ class WebSocketService {
   send(message: WebSocketMessage) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(message));
+      console.log("Sent message:", message.type);
     } else {
       console.warn("Cannot send message, WebSocket is not open");
     }
