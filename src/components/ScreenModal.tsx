@@ -18,6 +18,10 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  
+  // CRITICAL: This must match the ID format that the server sends + -full suffix
+  // The base ID that the server sends is screen-username (e.g., screen-ian)
+  // For the modal, we append -full to differentiate from the card
   const screenId = `screen-${name.toLowerCase()}-full`;
 
   useEffect(() => {
@@ -117,7 +121,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
               />
             ) : (
               <img
-                id={screenId}
+                id={screenId} // This ID must match exactly what the server expects + -full suffix
                 src={placeholderImage}
                 alt={`Tela de ${formattedName} (expandida)`}
                 className="w-full h-full object-cover"

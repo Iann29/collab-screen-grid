@@ -23,7 +23,9 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
   labelColor
 }) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-  // Important: Make sure the screenId matches exactly what the server sends
+  
+  // CRITICAL: This must match exactly what the server sends in the "id" field
+  // Server sends: "screen-ian", "screen-matheus", etc.
   const screenId = `screen-${name.toLowerCase()}`;
   
   const handleClick = () => {
@@ -60,7 +62,7 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
             />
           ) : (
             <img
-              id={screenId}
+              id={screenId} // This ID must match exactly what the server sends
               src={placeholderImage}
               alt={`Tela de ${formattedName}`}
               className="w-full h-full object-cover"

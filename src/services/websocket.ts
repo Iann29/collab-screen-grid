@@ -1,4 +1,3 @@
-
 type WebSocketMessage = {
   type: string;
   id?: string;
@@ -39,7 +38,6 @@ class WebSocketService {
       id: "viewer-web"
     });
     
-    // Log that we've successfully connected and identified
     console.log("Sent identity as viewer-web");
   }
 
@@ -54,26 +52,21 @@ class WebSocketService {
         if (screenId) {
           console.log("Updating image for screen:", screenId);
           
-          // Convert from screen-username format to just username for status updates
-          const username = screenId.replace('screen-', '');
-          
-          // Update image in card view
-          const imgElement = document.getElementById(`screen-${username}`) as HTMLImageElement | null;
+          const imgElement = document.getElementById(screenId) as HTMLImageElement | null;
           if (imgElement && message.data) {
             imgElement.src = `data:image/jpeg;base64,${message.data}`;
-            console.log(`Updated image for card: screen-${username}`);
+            console.log(`Updated image for: ${screenId}`);
             
-            // Update screen status to online
+            const username = screenId.replace('screen-', '');
             this.updateScreenStatus(username, true);
           } else {
-            console.log(`Could not find image element: screen-${username}`);
+            console.log(`Could not find image element with ID: ${screenId}`);
           }
           
-          // Update image in modal if open
-          const modalImgElement = document.getElementById(`screen-${username}-full`) as HTMLImageElement | null;
+          const modalImgElement = document.getElementById(`${screenId}-full`) as HTMLImageElement | null;
           if (modalImgElement && message.data) {
             modalImgElement.src = `data:image/jpeg;base64,${message.data}`;
-            console.log(`Updated image for modal: screen-${username}-full`);
+            console.log(`Updated image for modal: ${screenId}-full`);
           }
         }
       }
