@@ -15,7 +15,7 @@ const initialCollaborators = [
   { name: 'Julio', isOwner: false, label: 'Vadio', isOffline: true },
   { name: 'Pedro', isOwner: false, label: 'Unico que presta', isOffline: true },
   { name: 'Vini', isOwner: false, label: 'Nunca aparece', isOffline: true },
-  { name: 'Dumb Dummy', isOwner: false, label: 'I.A', isOffline: true, labelColor: 'text-red-500 bg-red-100' }
+  { name: 'Dumbdummy', isOwner: false, label: 'I.A', isOffline: true, labelColor: 'text-red-500 bg-red-100' }
 ];
 
 const Dashboard: React.FC = () => {
