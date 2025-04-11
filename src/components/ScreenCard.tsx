@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import placeholderImage from '/placeholder.svg';
 import chinaGif from '/gif/china.gif';
@@ -24,9 +23,22 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
 }) => {
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   
-  // CRITICAL: This must match exactly what the server sends in the "id" field
-  // Server sends: "screen-ian", "screen-matheus", etc.
+  // CRITICAL: Este ID deve corresponder EXATAMENTE ao que o servidor envia
+  // Garantimos lowercase para evitar problemas de case sensitivity
   const screenId = `screen-${name.toLowerCase()}`;
+  
+  // Use useRef para acessar o elemento da imagem diretamente quando necessário
+  const imageRef = useRef<HTMLImageElement>(null);
+  
+  // OTIMIZAÇÃO: Use um useEffect para debug e inicialização
+  useEffect(() => {
+    console.log(`ScreenCard ${screenId} montado`);
+    
+    // Este return é executado quando o componente é desmontado
+    return () => {
+      console.log(`ScreenCard ${screenId} desmontado`);
+    };
+  }, [screenId]);
   
   const handleClick = () => {
     onClick();
@@ -54,18 +66,30 @@ const ScreenCard: React.FC<ScreenCardProps> = ({
         onClick={handleClick}
       >
         <AspectRatio ratio={4/3} className="w-full">
+          {/* CORREÇÃO CRÍTICA: ID adicionado em AMBAS versões da imagem */}
           {isOffline ? (
             <img
+              id={screenId}
               src={chinaGif}
               alt={`Tela de ${formattedName} (offline)`}
               className="w-full h-full object-cover"
+              data-screen-id={screenId}
+              data-offline="true"
             />
           ) : (
             <img
               id={screenId}
+              ref={imageRef}
               src={placeholderImage}
               alt={`Tela de ${formattedName}`}
               className="w-full h-full object-cover"
+              data-screen-id={screenId}
+              data-offline="false"
+              // OTIMIZAÇÃO: Adiciona atributos de otimização de imagem
+              loading="eager"
+              decoding="async"
+              // OTIMIZAÇÃO: Indica ao browser que a imagem mudará com frequência
+              fetchpriority="high"
             />
           )}
           <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">

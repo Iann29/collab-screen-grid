@@ -23,10 +23,10 @@ const Dashboard: React.FC = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Connect to WebSocket when component mounts
+    // Conectar ao WebSocket quando o componente é montado
     websocketService.connect();
     
-    // Create event listener for screen status changes
+    // Criar listener para mudanças de status
     const handleScreenStatusChange = (event: CustomEvent<{ username: string, isOnline: boolean }>) => {
       const { username, isOnline } = event.detail;
       
@@ -38,23 +38,17 @@ const Dashboard: React.FC = () => {
         )
       );
       
-      // Update selected screen status if it's the current one
+      // Atualizar status da tela selecionada se for a atual
       if (selectedScreen?.toLowerCase() === username.toLowerCase()) {
         setIsOffline(!isOnline);
       }
       
-      // Show toast notification when a screen comes online
-      if (isOnline) {
-        toast({
-          title: `${username.charAt(0).toUpperCase() + username.slice(1)} está online!`,
-          description: "A tela agora está sendo transmitida em tempo real."
-        });
-      }
+      // As notificações toast foram removidas conforme solicitado
     };
     
     window.addEventListener('screen-status-change', handleScreenStatusChange as EventListener);
     
-    // Cleanup function
+    // Função de limpeza
     return () => {
       websocketService.disconnect();
       window.removeEventListener('screen-status-change', handleScreenStatusChange as EventListener);

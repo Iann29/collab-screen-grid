@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import placeholderImage from '/placeholder.svg';
@@ -19,12 +18,14 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
   const { toast } = useToast();
   const formattedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   
-  // CRITICAL: This must match the ID format that the server sends + -full suffix
-  // The base ID that the server sends is screen-username (e.g., screen-ian)
-  // For the modal, we append -full to differentiate from the card
-  const screenId = `screen-${name.toLowerCase()}-full`;
+  // CRITICAL: O ID base é o mesmo que no card, mas no modal adicionamos o sufixo '-full'
+  const screenId = `screen-${name.toLowerCase()}`;
+  const modalScreenId = `${screenId}-full`;
 
   useEffect(() => {
+    // Debug para verificar se o ID está correto
+    console.log(`Modal screen ID: ${modalScreenId}`);
+    
     // Create audio element when component mounts
     audioRef.current = new Audio('/audio/porquenotrabalha.mp3');
     
@@ -35,7 +36,7 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [modalScreenId]);
 
   // Reset and play audio when name or offline status changes
   useEffect(() => {
@@ -115,16 +116,24 @@ const ScreenModal: React.FC<ScreenModalProps> = ({ name, isOpen, isOffline = fal
           <AspectRatio ratio={4/3} className="w-full overflow-hidden">
             {isOffline ? (
               <img
+                id={modalScreenId}
                 src={chinaGif}
                 alt={`Tela de ${formattedName} (offline)`}
                 className="w-full h-full object-cover"
+                data-screen-id={modalScreenId}
+                data-offline="true"
               />
             ) : (
               <img
-                id={screenId} // This ID must match exactly what the server expects + -full suffix
+                id={modalScreenId}
                 src={placeholderImage}
                 alt={`Tela de ${formattedName} (expandida)`}
                 className="w-full h-full object-cover"
+                data-screen-id={modalScreenId}
+                data-offline="false"
+                loading="eager"
+                decoding="async"
+                fetchpriority="high"
               />
             )}
           </AspectRatio>
