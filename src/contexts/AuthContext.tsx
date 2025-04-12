@@ -10,17 +10,55 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Função para salvar o usuário no localStorage
+const saveUserToStorage = (user: User | null) => {
+  if (user) {
+    localStorage.setItem('auth_user', JSON.stringify(user));
+  } else {
+    localStorage.removeItem('auth_user');
+  }
+};
+
+// Função para recuperar o usuário do localStorage
+const getUserFromStorage = (): User | null => {
+  const storedUser = localStorage.getItem('auth_user');
+  if (storedUser) {
+    try {
+      return JSON.parse(storedUser) as User;
+    } catch (e) {
+      console.error('Erro ao carregar usuário do localStorage:', e);
+      return null;
+    }
+  }
+  return null;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Inicializa o estado com o usuário do localStorage, se existir
+  const [user, setUser] = useState<User | null>(() => getUserFromStorage());
   const [loading, setLoading] = useState(true);
 
+  // Efeito para verificar o usuário quando o componente é montado
   useEffect(() => {
-    // Verificar usuário atual
     const checkUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
+        // Se já temos usuário do localStorage, usa-o primeiro para renderização rápida
+        const storedUser = getUserFromStorage();
+        
+        if (storedUser) {
+          // Define o usuário no estado do componente
+          setUser(storedUser);
+          
+          // Atualiza também o estado no serviço Supabase para manter sincronizado
+          // Isso é importante para que outras chamadas de API funcionem corretamente
+          await supabase.auth.getSession();
+        } else {
+          // Se não tiver no localStorage, tenta obter do estado do serviço
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+            saveUserToStorage(currentUser);
+          }
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -31,10 +69,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Inicializar verificação
     checkUser();
-
-    return () => {
-      // Nada a limpar
-    };
   }, []);
 
   const signIn = async (username: string, password: string) => {
@@ -43,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (data && !error) {
         setUser(data);
+        // Persiste o usuário no localStorage
+        saveUserToStorage(data);
       }
       
       return { error };
@@ -56,6 +92,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await supabaseSignOut();
       setUser(null);
+      // Remove o usuário do localStorage
+      saveUserToStorage(null);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }

@@ -3,6 +3,9 @@ import ScreenCard from './ScreenCard';
 import ScreenModal from './ScreenModal';
 import { websocketService } from '@/services/websocket';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from './ui/button';
+import { LogOut } from 'lucide-react';
 
 // Configuração para notificações de status quando usuários ficam online/offline
 const SHOW_NOTIFICATIONS = false; // Defina como true se quiser notificações toast
@@ -23,6 +26,7 @@ const Dashboard: React.FC = () => {
   const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   
   // Rastreador de última notificação para evitar spam de notificações
   const lastNotificationRef = React.useRef<{[key: string]: boolean}>({});
@@ -103,11 +107,43 @@ const Dashboard: React.FC = () => {
     setSelectedScreen(null);
   };
 
+  // Função para lidar com o logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso"
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro ao fazer logout",
+        description: "Ocorreu um erro ao tentar desconectar",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="container px-4 py-8 mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Painel de Controle de Emuladores</h1>
-        <p className="text-muted-foreground">Monitore e controle as ações dos emuladores em tempo real</p>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Painel de Controle de Emuladores</h1>
+          <p className="text-muted-foreground">Monitore e controle as ações dos emuladores em tempo real</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium mr-2">Olá, {user?.username || 'Usuário'}</span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleLogout}
+            className="flex items-center gap-1"
+          >
+            <LogOut size={16} />
+            Sair
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

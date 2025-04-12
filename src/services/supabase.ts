@@ -164,11 +164,30 @@ export const signOut = async (): Promise<{ error: null }> => {
 
 /**
  * Obtém o objeto do usuário atualmente autenticado (se houver).
+ * Verifica primeiro o localStorage antes de retornar o currentUser em memória.
  * @returns O objeto User ou null.
  */
 export const getCurrentUser = async (): Promise<User | null> => {
-  // Retorna o valor atual da variável 'currentUser'
-  return currentUser;
+  // Se já tem usuário em memória, retorna ele
+  if (currentUser) {
+    return currentUser;
+  }
+  
+  // Caso contrário, tenta obter do localStorage
+  try {
+    const storedUser = localStorage.getItem('auth_user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser) as User;
+      // Sincroniza o usuário obtido do localStorage com a variável do módulo
+      currentUser = user;
+      return user;
+    }
+  } catch (error) {
+    console.error('Erro ao obter usuário do localStorage:', error);
+  }
+  
+  // Se não achou em nenhum lugar, retorna null
+  return null;
 };
 
 /**
